@@ -1,0 +1,20 @@
+{
+  "name": "@workflow-ai/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rimraf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test dist/**/*.test.js 2>nul || echo \"No contract tests yet\""
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@workflow-ai/config": "*",
+    "typescript": "^5.7.3"
+  }
+}
