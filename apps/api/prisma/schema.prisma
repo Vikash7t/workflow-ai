@@ -1,0 +1,276 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Authentication & Identity (Compatible with Better Auth)
+// -----------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions      Session[]
+  accounts      Account[]
+  orgMemberships OrganizationMember[]
+  wsMemberships  WorkspaceMember[]
+  reportedIssues Issue[]   @relation("IssueReporter")
+  assignedIssues Issue[]   @relation("IssueAssignee")
+  comments      Comment[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, value])
+  @@map("verifications")
+}
+
+// -----------------------------------------------------------------------------
+// Multi-Tenancy (Organizations & Workspaces)
+// -----------------------------------------------------------------------------
+
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     OrganizationMember[]
+  workspaces  Workspace[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String       @id @default(uuid())
+  organizationId String
+  userId         String
+  role           String       @default("MEMBER") // OWNER, ADMIN, MEMBER
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@map("organization_members")
+}
+
+model Workspace {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  slug           String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members        WorkspaceMember[]
+  projects       Project[]
+  workflowStatuses WorkflowStatus[]
+  issues         Issue[]
+
+  @@index([organizationId])
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          String    @id @default(uuid())
+  workspaceId String
+  userId      String
+  role        String    @default("MEMBER") // ADMIN, MEMBER, VIEWER
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@map("workspace_members")
+}
+
+// -----------------------------------------------------------------------------
+// Project & Workflow Management
+// -----------------------------------------------------------------------------
+
+model Project {
+  id           String   @id @default(uuid())
+  workspaceId  String
+  name         String
+  key          String   // e.g., "ENG", "PLAT"
+  description  String?
+  issueCounter Int      @default(0) // Concurrency-safe atomic sequence counter
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  issues       Issue[]
+
+  @@unique([workspaceId, key])
+  @@index([workspaceId])
+  @@map("projects")
+}
+
+model WorkflowStatus {
+  id          String   @id @default(uuid())
+  workspaceId String
+  name        String   // "Backlog", "Todo", "In Progress", "In Review", "Done"
+  category    String   @default("UNSTARTED") // BACKLOG, UNSTARTED, STARTED, COMPLETED, CANCELLED
+  color       String   @default("#6B7280")
+  position    Int      @default(0)
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  issues      Issue[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId, position])
+  @@map("workflow_statuses")
+}
+
+// -----------------------------------------------------------------------------
+// Issues, Dependencies & Collaboration
+// -----------------------------------------------------------------------------
+
+model Issue {
+  id           String    @id @default(uuid())
+  projectId    String
+  workspaceId  String    // Denormalized for tenant index isolation
+  issueNumber  Int       // e.g. 101
+  key          String    // e.g. "ENG-101"
+  type         String    @default("TASK") // EPIC, STORY, TASK, BUG, SUBTASK
+  title        String
+  description  String?
+  priority     String    @default("P2")   // P0, P1, P2, P3
+  statusId     String
+  parentId     String?
+  assigneeId   String?
+  reporterId   String
+  estimate     Int?
+  dueDate      DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workspace    Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  status       WorkflowStatus @relation(fields: [statusId], references: [id])
+  parent       Issue?         @relation("SubtaskHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  subtasks     Issue[]        @relation("SubtaskHierarchy")
+  assignee     User?          @relation("IssueAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  reporter     User           @relation("IssueReporter", fields: [reporterId], references: [id], onDelete: Restrict)
+  
+  comments     Comment[]
+  activities   ActivityLog[]
+  blockedBy    IssueDependency[] @relation("BlockedIssues")
+  blocking     IssueDependency[] @relation("BlockerIssues")
+
+  @@unique([projectId, issueNumber])
+  @@index([workspaceId, statusId])
+  @@index([projectId, statusId])
+  @@index([assigneeId])
+  @@map("issues")
+}
+
+model IssueDependency {
+  id             String   @id @default(uuid())
+  blockerIssueId String
+  blockedIssueId String
+  type           String   @default("BLOCKS") // BLOCKS, RELATES_TO, DUPLICATE_OF
+  createdAt      DateTime @default(now())
+
+  blocker        Issue    @relation("BlockerIssues", fields: [blockerIssueId], references: [id], onDelete: Cascade)
+  blocked        Issue    @relation("BlockedIssues", fields: [blockedIssueId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerIssueId, blockedIssueId])
+  @@map("issue_dependencies")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  issueId   String
+  userId    String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([issueId])
+  @@map("comments")
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  issueId   String
+  userId    String?
+  action    String   // CREATED, STATUS_CHANGED, ASSIGNED, PRIORITY_CHANGED, COMMENTED
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId])
+  @@map("activity_logs")
+}
