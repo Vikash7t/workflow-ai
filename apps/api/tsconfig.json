@@ -13,6 +13,7 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
+      "@workflow-ai/contracts": ["../../packages/contracts/src/index.ts"],
       "@common/*": ["src/common/*"],
       "@config/*": ["src/config/*"],
       "@database/*": ["src/database/*"],

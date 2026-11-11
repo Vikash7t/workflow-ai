@@ -26,6 +26,9 @@ jobs:
       - name: Generate Prisma client
         run: npm run db:generate
 
+      - name: Build contracts package
+        run: npm run build:contracts
+
       - name: Typecheck monorepo
         run: npm run typecheck
 
