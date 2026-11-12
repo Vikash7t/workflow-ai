@@ -27,6 +27,7 @@ model User {
   reportedIssues Issue[]   @relation("IssueReporter")
   assignedIssues Issue[]   @relation("IssueAssignee")
   comments      Comment[]
+  sentInvitations WorkspaceInvitation[] @relation("Inviter")
 
   @@map("users")
 }
@@ -127,6 +128,7 @@ model Workspace {
   projects       Project[]
   workflowStatuses WorkflowStatus[]
   issues         Issue[]
+  invitations    WorkspaceInvitation[]
 
   @@index([organizationId])
   @@map("workspaces")
@@ -146,6 +148,25 @@ model WorkspaceMember {
   @@unique([workspaceId, userId])
   @@index([userId])
   @@map("workspace_members")
+}
+
+model WorkspaceInvitation {
+  id          String    @id @default(uuid())
+  workspaceId String
+  email       String
+  role        String    @default("MEMBER") // ADMIN, MEMBER, VIEWER
+  token       String    @unique
+  expiresAt   DateTime
+  inviterId   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  inviter     User      @relation("Inviter", fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, email])
+  @@index([token])
+  @@map("workspace_invitations")
 }
 
 // -----------------------------------------------------------------------------
