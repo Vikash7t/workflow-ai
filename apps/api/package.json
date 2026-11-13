@@ -8,7 +8,7 @@
     "dev": "nest start --watch",
     "dev:debug": "nest start --debug --watch",
     "typecheck": "tsc --noEmit",
-    "test": "ts-node -P tsconfig.json src/modules/tenancy/tenancy-security.spec.ts && ts-node -P tsconfig.json src/modules/tenancy/members-rules.spec.ts",
+    "test": "ts-node -P tsconfig.json src/modules/tenancy/tenancy-security.spec.ts && ts-node -P tsconfig.json src/modules/tenancy/members-rules.spec.ts && ts-node -P tsconfig.json src/modules/issues/issues-domain.spec.ts",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
