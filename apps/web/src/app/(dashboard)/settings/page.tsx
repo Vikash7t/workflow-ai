@@ -16,6 +16,8 @@ import {
   Plus,
 } from "lucide-react";
 import { WorkspaceDto, WorkspaceMemberDto, WorkspaceInvitationDto, Role } from "@workflow-ai/contracts";
+import { apiClient } from "@/lib/api/client";
+import { listWorkspaces, listWorkspaceMembers } from "@/lib/api/tenancy";
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
@@ -34,11 +36,7 @@ export default function SettingsPage() {
   const { data: workspaces = [] } = useQuery<WorkspaceDto[]>({
     queryKey: ["workspaces"],
     queryFn: async () => {
-      const res = await fetch("http://localhost:4000/api/v1/workspaces", {
-        credentials: "include",
-      });
-      if (!res.ok) return [];
-      const data = await res.json();
+      const data = await listWorkspaces();
       if (data.length > 0 && !activeWorkspaceId) {
         setActiveWorkspaceId(data[0].id);
       }
@@ -54,14 +52,7 @@ export default function SettingsPage() {
   // Fetch members
   const { data: members = [], isLoading: membersLoading } = useQuery<WorkspaceMemberDto[]>({
     queryKey: ["members", currentWorkspaceId],
-    queryFn: async () => {
-      if (!currentWorkspaceId) return [];
-      const res = await fetch(`http://localhost:4000/api/v1/workspaces/${currentWorkspaceId}/members`, {
-        credentials: "include",
-      });
-      if (!res.ok) return [];
-      return res.json();
-    },
+    queryFn: () => listWorkspaceMembers(currentWorkspaceId),
     enabled: !!currentWorkspaceId,
   });
 
@@ -70,11 +61,9 @@ export default function SettingsPage() {
     queryKey: ["invitations", currentWorkspaceId],
     queryFn: async () => {
       if (!currentWorkspaceId || !isAdminOrOwner) return [];
-      const res = await fetch(`http://localhost:4000/api/v1/workspaces/${currentWorkspaceId}/invitations`, {
-        credentials: "include",
-      });
-      if (!res.ok) return [];
-      return res.json();
+      return apiClient<WorkspaceInvitationDto[]>(
+        `/api/v1/workspaces/${currentWorkspaceId}/invitations`
+      );
     },
     enabled: !!currentWorkspaceId && isAdminOrOwner,
   });
@@ -82,17 +71,13 @@ export default function SettingsPage() {
   // Send invitation mutation
   const inviteMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`http://localhost:4000/api/v1/workspaces/${currentWorkspaceId}/invitations`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || "Failed to send invitation");
-      }
-      return res.json();
+      return apiClient(
+        `/api/v1/workspaces/${currentWorkspaceId}/invitations`,
+        {
+          method: "POST",
+          body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+        }
+      );
     },
     onSuccess: () => {
       setInviteStatus("Invitation sent successfully!");
@@ -109,20 +94,13 @@ export default function SettingsPage() {
   const createWsMutation = useMutation({
     mutationFn: async () => {
       if (!currentWorkspace?.organizationId) throw new Error("Organization ID required");
-      const res = await fetch("http://localhost:4000/api/v1/workspaces", {
+      return apiClient<WorkspaceDto>("/api/v1/workspaces", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           organizationId: currentWorkspace.organizationId,
           name: newWsName,
         }),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || "Failed to create workspace");
-      }
-      return res.json();
     },
     onSuccess: (newWs) => {
       setNewWsName("");

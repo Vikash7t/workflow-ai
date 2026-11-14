@@ -6,6 +6,7 @@ import { useSession, signOut } from "@/lib/auth-client";
 import { ChevronDown, Plus, LogOut, Building, Shield, User } from "lucide-react";
 import Link from "next/link";
 import { WorkspaceDto } from "@workflow-ai/contracts";
+import { listWorkspaces } from "@/lib/api/tenancy";
 
 export function WorkspaceNav({
   activeWorkspaceId,
@@ -19,13 +20,7 @@ export function WorkspaceNav({
 
   const { data: workspaces = [], isLoading } = useQuery<WorkspaceDto[]>({
     queryKey: ["workspaces"],
-    queryFn: async () => {
-      const res = await fetch("http://localhost:4000/api/v1/workspaces", {
-        credentials: "include",
-      });
-      if (!res.ok) return [];
-      return res.json();
-    },
+    queryFn: listWorkspaces,
     enabled: !!session?.user,
   });
 
