@@ -8,11 +8,13 @@ import {
   ProjectDto,
   WorkflowStatusDto,
   WorkspaceMemberDto,
+  SprintDto,
   IssueDto,
 } from "@workflow-ai/contracts";
 import { listWorkspaces, listWorkspaceMembers } from "@/lib/api/tenancy";
 import { listProjects } from "@/lib/api/projects";
 import { listWorkflowStatuses } from "@/lib/api/workflows";
+import { listSprints } from "@/lib/api/sprints";
 import { listIssues } from "@/lib/api/issues";
 import { WorkspaceNav } from "@/components/workspace-nav";
 import { KanbanBoard } from "@/components/board/kanban-board";
@@ -21,6 +23,8 @@ import { ViewHeader, FilterState } from "@/components/board/view-header";
 import { IssueDrawer } from "@/components/issues/issue-drawer";
 import { CreateIssueModal } from "@/components/issues/create-issue-modal";
 import { CreateProjectModal } from "@/components/projects/create-project-modal";
+import { CreateSprintModal } from "@/components/sprints/create-sprint-modal";
+import { ActiveSprintBanner } from "@/components/sprints/active-sprint-banner";
 import {
   FolderKanban,
   Plus,
@@ -42,10 +46,12 @@ export function DashboardView() {
   const [isCreateIssueOpen, setIsCreateIssueOpen] = useState(false);
   const [quickCreateStatusId, setQuickCreateStatusId] = useState<string | undefined>();
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [isCreateSprintOpen, setIsCreateSprintOpen] = useState(false);
 
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     statusId: "",
+    sprintId: "",
     type: "",
     priority: "",
     assigneeId: "",
@@ -122,7 +128,14 @@ export function DashboardView() {
     enabled: !!activeWorkspaceId,
   });
 
-  // 5. Fetch Issues for active project
+  // 5. Fetch Sprints for active project
+  const { data: sprints = [] } = useQuery<SprintDto[]>({
+    queryKey: ["sprints", activeWorkspaceId, activeProjectId],
+    queryFn: () => listSprints(activeWorkspaceId, activeProjectId),
+    enabled: !!activeWorkspaceId && !!activeProjectId,
+  });
+
+  // 6. Fetch Issues for active project
   const { data: issuesResponse, isLoading: isLoadingIssues } = useQuery({
     queryKey: [
       "issues",
@@ -135,6 +148,7 @@ export function DashboardView() {
         projectId: activeProjectId,
         search: filters.search || undefined,
         statusId: filters.statusId || undefined,
+        sprintId: filters.sprintId || undefined,
         type: (filters.type as any) || undefined,
         priority: (filters.priority as any) || undefined,
         assigneeId: filters.assigneeId || undefined,
@@ -266,6 +280,13 @@ export function DashboardView() {
                 </div>
               </div>
 
+              {/* Active Sprint Banner */}
+              <ActiveSprintBanner
+                workspaceId={activeWorkspaceId}
+                projectId={activeProjectId}
+                sprints={sprints}
+              />
+
               <ViewHeader
                 currentView={currentView}
                 onViewChange={setCurrentView}
@@ -273,10 +294,12 @@ export function DashboardView() {
                 onFilterChange={setFilters}
                 statuses={statuses}
                 members={members}
+                sprints={sprints}
                 onOpenCreateModal={() => {
                   setQuickCreateStatusId(undefined);
                   setIsCreateIssueOpen(true);
                 }}
+                onOpenCreateSprintModal={() => setIsCreateSprintOpen(true)}
               />
 
               {/* View Rendering */}
@@ -333,6 +356,7 @@ export function DashboardView() {
         projectId={activeProjectId}
         statuses={statuses}
         members={members}
+        sprints={sprints}
         candidateParents={issues}
         initialStatusId={quickCreateStatusId}
       />
@@ -343,6 +367,14 @@ export function DashboardView() {
         onClose={() => setIsCreateProjectOpen(false)}
         workspaceId={activeWorkspaceId}
         onProjectCreated={(newProjId) => setActiveProjectId(newProjId)}
+      />
+
+      {/* Create Sprint Modal */}
+      <CreateSprintModal
+        isOpen={isCreateSprintOpen}
+        onClose={() => setIsCreateSprintOpen(false)}
+        workspaceId={activeWorkspaceId}
+        projectId={activeProjectId}
       />
     </div>
   );

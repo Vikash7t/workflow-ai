@@ -5,6 +5,10 @@ import { TenancyModule } from "./modules/tenancy/tenancy.module";
 import { ProjectsModule } from "./modules/projects/projects.module";
 import { WorkflowsModule } from "./modules/workflows/workflows.module";
 import { IssuesModule } from "./modules/issues/issues.module";
+import { ActivitiesModule } from "./modules/activities/activities.module";
+import { CommentsModule } from "./modules/comments/comments.module";
+import { DependenciesModule } from "./modules/dependencies/dependencies.module";
+import { SprintsModule } from "./modules/sprints/sprints.module";
 import { PrismaService } from "./database/prisma.service";
 
 @Module({
@@ -15,6 +19,10 @@ import { PrismaService } from "./database/prisma.service";
     ProjectsModule,
     WorkflowsModule,
     IssuesModule,
+    ActivitiesModule,
+    CommentsModule,
+    DependenciesModule,
+    SprintsModule,
   ],
   providers: [PrismaService],
   exports: [PrismaService],

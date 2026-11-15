@@ -10,6 +10,7 @@ import {
   Priority,
   WorkflowStatusDto,
   WorkspaceMemberDto,
+  SprintDto,
 } from "@workflow-ai/contracts";
 import { createIssue } from "@/lib/api/issues";
 
@@ -20,6 +21,7 @@ interface CreateIssueModalProps {
   projectId: string;
   statuses: WorkflowStatusDto[];
   members: WorkspaceMemberDto[];
+  sprints?: SprintDto[];
   candidateParents?: IssueDto[];
   initialStatusId?: string;
   initialParentId?: string;
@@ -33,6 +35,7 @@ export function CreateIssueModal({
   projectId,
   statuses,
   members,
+  sprints = [],
   candidateParents = [],
   initialStatusId,
   initialParentId,
@@ -47,6 +50,7 @@ export function CreateIssueModal({
   const [statusId, setStatusId] = useState(
     initialStatusId || statuses[0]?.id || ""
   );
+  const [sprintId, setSprintId] = useState<string>("");
   const [assigneeId, setAssigneeId] = useState<string>("");
   const [parentId, setParentId] = useState<string>(initialParentId || "");
   const [estimate, setEstimate] = useState<string>("");
@@ -59,6 +63,7 @@ export function CreateIssueModal({
       setType(initialType);
       setPriority("P2");
       setStatusId(initialStatusId || statuses[0]?.id || "");
+      setSprintId("");
       setAssigneeId("");
       setParentId(initialParentId || "");
       setEstimate("");
@@ -132,6 +137,7 @@ export function CreateIssueModal({
       type,
       priority,
       statusId,
+      sprintId: sprintId || undefined,
       parentId: type === "EPIC" ? undefined : parentId || undefined,
       assigneeId: assigneeId || undefined,
       estimate: estimate ? parseInt(estimate, 10) : undefined,
@@ -288,19 +294,39 @@ export function CreateIssueModal({
             </div>
           )}
 
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              Estimate (Story Points)
-            </label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              value={estimate}
-              onChange={(e) => setEstimate(e.target.value)}
-              placeholder="e.g. 3"
-              className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">
+                Sprint
+              </label>
+              <select
+                value={sprintId}
+                onChange={(e) => setSprintId(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-blue-500 transition"
+              >
+                <option value="">Backlog</option>
+                {sprints.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.status})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">
+                Estimate (Story Points)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={estimate}
+                onChange={(e) => setEstimate(e.target.value)}
+                placeholder="e.g. 3"
+                className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+              />
+            </div>
           </div>
 
           <div>
