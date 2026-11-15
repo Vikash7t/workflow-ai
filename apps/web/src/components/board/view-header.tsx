@@ -7,6 +7,7 @@ import {
   Plus,
   X,
   Timer,
+  Sparkles,
 } from "lucide-react";
 import {
   WorkflowStatusDto,
@@ -33,6 +34,7 @@ interface ViewHeaderProps {
   sprints: SprintDto[];
   onOpenCreateModal: () => void;
   onOpenCreateSprintModal?: () => void;
+  onOpenAiDecomposeModal?: () => void;
 }
 
 export function ViewHeader({
@@ -45,6 +47,7 @@ export function ViewHeader({
   sprints,
   onOpenCreateModal,
   onOpenCreateSprintModal,
+  onOpenAiDecomposeModal,
 }: ViewHeaderProps) {
   const hasActiveFilters =
     Boolean(filters.search) ||
@@ -96,6 +99,16 @@ export function ViewHeader({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
+          {onOpenAiDecomposeModal && (
+            <button
+              onClick={onOpenAiDecomposeModal}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-purple-500/30 bg-purple-950/40 hover:bg-purple-900/50 text-purple-200 text-xs font-semibold shadow-sm transition active:scale-95"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <span>Decompose with AI</span>
+            </button>
+          )}
+
           {onOpenCreateSprintModal && (
             <button
               onClick={onOpenCreateSprintModal}
