@@ -11,6 +11,7 @@ import { DependenciesModule } from "./modules/dependencies/dependencies.module";
 import { SprintsModule } from "./modules/sprints/sprints.module";
 import { AiModule } from "./modules/ai/ai.module";
 import { IntegrationsModule } from "./modules/integrations/integrations.module";
+import { CopilotModule } from "./modules/copilot/copilot.module";
 import { PrismaService } from "./database/prisma.service";
 
 @Module({
@@ -27,6 +28,7 @@ import { PrismaService } from "./database/prisma.service";
     SprintsModule,
     AiModule,
     IntegrationsModule,
+    CopilotModule,
   ],
   providers: [PrismaService],
   exports: [PrismaService],

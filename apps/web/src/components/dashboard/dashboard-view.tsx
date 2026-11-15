@@ -26,6 +26,7 @@ import { CreateProjectModal } from "@/components/projects/create-project-modal";
 import { CreateSprintModal } from "@/components/sprints/create-sprint-modal";
 import { ActiveSprintBanner } from "@/components/sprints/active-sprint-banner";
 import { AiDecomposeModal } from "@/components/ai/ai-decompose-modal";
+import { CopilotModal } from "@/components/copilot/copilot-modal";
 import {
   FolderKanban,
   Plus,
@@ -49,6 +50,7 @@ export function DashboardView() {
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isCreateSprintOpen, setIsCreateSprintOpen] = useState(false);
   const [isAiDecomposeOpen, setIsAiDecomposeOpen] = useState(false);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
   const [filters, setFilters] = useState<FilterState>({
     search: "",
@@ -59,13 +61,23 @@ export function DashboardView() {
     assigneeId: "",
   });
 
-  // Global 'C' shortcut to open Create Issue modal
+  // Global keyboard shortcuts (Cmd+K for Copilot, C for Create Issue)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Cmd+K / Ctrl+K for Copilot Command Bar
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsCopilotOpen((prev) => !prev);
+        return;
+      }
+
+      // 2. 'C' shortcut to open Create Issue modal
       if (
         e.key.toLowerCase() === "c" &&
         !isCreateIssueOpen &&
         !isCreateProjectOpen &&
+        !isCopilotOpen &&
+        !isAiDecomposeOpen &&
         activeProjectId &&
         !(
           e.target instanceof HTMLInputElement ||
@@ -80,7 +92,13 @@ export function DashboardView() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isCreateIssueOpen, isCreateProjectOpen, activeProjectId]);
+  }, [
+    isCreateIssueOpen,
+    isCreateProjectOpen,
+    isCopilotOpen,
+    isAiDecomposeOpen,
+    activeProjectId,
+  ]);
 
   // 1. Fetch Workspaces
   const { data: workspaces = [], isLoading: isLoadingWorkspaces } = useQuery<WorkspaceDto[]>({
@@ -303,6 +321,7 @@ export function DashboardView() {
                 }}
                 onOpenCreateSprintModal={() => setIsCreateSprintOpen(true)}
                 onOpenAiDecomposeModal={() => setIsAiDecomposeOpen(true)}
+                onOpenCopilotModal={() => setIsCopilotOpen(true)}
               />
 
               {/* View Rendering */}
@@ -387,6 +406,16 @@ export function DashboardView() {
         workspaceId={activeWorkspaceId}
         projectId={activeProjectId}
         sprints={sprints}
+      />
+
+      {/* Conversational Project Copilot Modal (Phase 8) */}
+      <CopilotModal
+        isOpen={isCopilotOpen}
+        onClose={() => setIsCopilotOpen(false)}
+        workspaceId={activeWorkspaceId}
+        projectId={activeProjectId}
+        projectName={activeProject?.name}
+        projectKey={activeProject?.key}
       />
     </div>
   );
