@@ -5,3 +5,7 @@ export * from "./tenancy.contract.js";
 export * from "./project.contract.js";
 export * from "./workflow.contract.js";
 export * from "./issue.contract.js";
+export * from "./comment.contract.js";
+export * from "./dependency.contract.js";
+export * from "./sprint.contract.js";
+export * from "./activity.contract.js";

@@ -32,6 +32,7 @@ export class IssuesService {
       description: issue.description,
       priority: issue.priority as Priority,
       statusId: issue.statusId,
+      sprintId: issue.sprintId || null,
       parentId: issue.parentId,
       assigneeId: issue.assigneeId,
       reporterId: issue.reporterId,
@@ -132,7 +133,17 @@ export class IssuesService {
       }
     }
 
-    // 5. Atomic concurrency-safe sequence generation inside transaction
+    // 5. Verify sprint exists in the same project (if specified)
+    if (dto.sprintId) {
+      const sprint = await this.prisma.sprint.findUnique({
+        where: { id: dto.sprintId },
+      });
+      if (!sprint || sprint.workspaceId !== workspaceId || sprint.projectId !== dto.projectId) {
+        throw new BadRequestException("Sprint not found in the same project");
+      }
+    }
+
+    // 6. Atomic concurrency-safe sequence generation inside transaction
     const createdIssue = await this.prisma.$transaction(async (tx) => {
       const updatedProj = await tx.project.update({
         where: { id: dto.projectId },
@@ -154,6 +165,7 @@ export class IssuesService {
           description: dto.description?.trim(),
           priority: dto.priority,
           statusId: dto.statusId,
+          sprintId: dto.sprintId || null,
           parentId: dto.parentId,
           assigneeId: dto.assigneeId,
           reporterId,
@@ -188,6 +200,7 @@ export class IssuesService {
 
     if (filter.projectId) where.projectId = filter.projectId;
     if (filter.statusId) where.statusId = filter.statusId;
+    if (filter.sprintId !== undefined) where.sprintId = filter.sprintId;
     if (filter.type) where.type = filter.type;
     if (filter.priority) where.priority = filter.priority;
     if (filter.assigneeId) where.assigneeId = filter.assigneeId;
@@ -315,6 +328,16 @@ export class IssuesService {
       }
     }
 
+    // Validate new sprint
+    if (dto.sprintId !== undefined && dto.sprintId) {
+      const sprint = await this.prisma.sprint.findUnique({
+        where: { id: dto.sprintId },
+      });
+      if (!sprint || sprint.workspaceId !== workspaceId || sprint.projectId !== existing.projectId) {
+        throw new BadRequestException("Sprint not found in the same project");
+      }
+    }
+
     const updated = await this.prisma.$transaction(async (tx) => {
       const result = await tx.issue.update({
         where: { id: issueId },
@@ -324,6 +347,7 @@ export class IssuesService {
           ...(dto.type ? { type: dto.type } : {}),
           ...(dto.priority ? { priority: dto.priority } : {}),
           ...(dto.statusId ? { statusId: dto.statusId } : {}),
+          ...(dto.sprintId !== undefined ? { sprintId: dto.sprintId } : {}),
           ...(dto.parentId !== undefined ? { parentId: dto.parentId } : {}),
           ...(dto.assigneeId !== undefined ? { assigneeId: dto.assigneeId } : {}),
           ...(dto.estimate !== undefined ? { estimate: dto.estimate } : {}),

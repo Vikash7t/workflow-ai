@@ -5,19 +5,19 @@ import {
   List,
   Search,
   Plus,
-  Filter,
   X,
+  Timer,
 } from "lucide-react";
 import {
-  IssueType,
-  Priority,
   WorkflowStatusDto,
   WorkspaceMemberDto,
+  SprintDto,
 } from "@workflow-ai/contracts";
 
 export interface FilterState {
   search: string;
   statusId: string;
+  sprintId: string;
   type: string;
   priority: string;
   assigneeId: string;
@@ -30,7 +30,9 @@ interface ViewHeaderProps {
   onFilterChange: (filters: FilterState) => void;
   statuses: WorkflowStatusDto[];
   members: WorkspaceMemberDto[];
+  sprints: SprintDto[];
   onOpenCreateModal: () => void;
+  onOpenCreateSprintModal?: () => void;
 }
 
 export function ViewHeader({
@@ -40,11 +42,14 @@ export function ViewHeader({
   onFilterChange,
   statuses,
   members,
+  sprints,
   onOpenCreateModal,
+  onOpenCreateSprintModal,
 }: ViewHeaderProps) {
   const hasActiveFilters =
     Boolean(filters.search) ||
     Boolean(filters.statusId) ||
+    Boolean(filters.sprintId) ||
     Boolean(filters.type) ||
     Boolean(filters.priority) ||
     Boolean(filters.assigneeId);
@@ -53,6 +58,7 @@ export function ViewHeader({
     onFilterChange({
       search: "",
       statusId: "",
+      sprintId: "",
       type: "",
       priority: "",
       assigneeId: "",
@@ -90,6 +96,16 @@ export function ViewHeader({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
+          {onOpenCreateSprintModal && (
+            <button
+              onClick={onOpenCreateSprintModal}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-medium transition"
+            >
+              <Timer className="w-3.5 h-3.5 text-blue-400" />
+              <span>New Sprint</span>
+            </button>
+          )}
+
           <button
             onClick={onOpenCreateModal}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-sm transition active:scale-95"
@@ -106,7 +122,7 @@ export function ViewHeader({
       {/* Filter Row */}
       <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
         {/* Search Input */}
-        <div className="relative min-w-[200px] flex-1 sm:flex-initial">
+        <div className="relative min-w-[180px] flex-1 sm:flex-initial">
           <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -118,6 +134,22 @@ export function ViewHeader({
             className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
           />
         </div>
+
+        {/* Sprint Filter */}
+        <select
+          value={filters.sprintId}
+          onChange={(e) =>
+            onFilterChange({ ...filters, sprintId: e.target.value })
+          }
+          className="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 focus:outline-none focus:border-blue-500 font-medium"
+        >
+          <option value="">All Sprints</option>
+          {sprints.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name} ({s.status})
+            </option>
+          ))}
+        </select>
 
         {/* Status Filter */}
         <select
