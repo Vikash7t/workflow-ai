@@ -14,6 +14,7 @@ import { IntegrationsModule } from "./modules/integrations/integrations.module";
 import { CopilotModule } from "./modules/copilot/copilot.module";
 import { SearchModule } from "./modules/search/search.module";
 import { IntelligenceModule } from "./modules/intelligence/intelligence.module";
+import { ExternalIngestionModule } from "./modules/ingestion/ingestion.module";
 import { PrismaService } from "./database/prisma.service";
 
 @Module({
@@ -33,6 +34,7 @@ import { PrismaService } from "./database/prisma.service";
     CopilotModule,
     SearchModule,
     IntelligenceModule,
+    ExternalIngestionModule,
   ],
   providers: [PrismaService],
   exports: [PrismaService],
