@@ -15,18 +15,20 @@ import {
   Trash2,
   Plus,
   GitPullRequest,
+  MessageSquare,
 } from "lucide-react";
 import { WorkspaceDto, WorkspaceMemberDto, WorkspaceInvitationDto, Role } from "@workflow-ai/contracts";
 import { apiClient } from "@/lib/api/client";
 import { listWorkspaces, listWorkspaceMembers } from "@/lib/api/tenancy";
 import { GitIntegrationsPanel } from "@/components/integrations/git-integrations-panel";
+import { ChannelMappingsPanel } from "@/components/integrations/channel-mappings-panel";
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
 
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"members" | "integrations">("members");
+  const [activeTab, setActiveTab] = useState<"members" | "integrations" | "channels">("members");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<Role>("MEMBER");
   const [inviteStatus, setInviteStatus] = useState<string | null>(null);
@@ -196,6 +198,18 @@ export default function SettingsPage() {
             <GitPullRequest className="w-3.5 h-3.5" />
             <span>Git Integrations</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab("channels")}
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              activeTab === "channels"
+                ? "bg-indigo-600/15 text-indigo-400 border border-indigo-500/30"
+                : "text-slate-400 hover:text-white hover:bg-slate-900"
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>Slack & Discord</span>
+          </button>
         </div>
 
         {activeTab === "members" ? (
@@ -314,8 +328,13 @@ export default function SettingsPage() {
             </div>
           )}
         </div>
-        ) : (
+        ) : activeTab === "integrations" ? (
           <GitIntegrationsPanel
+            workspaceId={currentWorkspaceId}
+            isAdmin={isAdminOrOwner}
+          />
+        ) : (
+          <ChannelMappingsPanel
             workspaceId={currentWorkspaceId}
             isAdmin={isAdminOrOwner}
           />

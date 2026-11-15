@@ -14,3 +14,4 @@ export * from "./git-integration.contract.js";
 export * from "./copilot.contract.js";
 export * from "./search.contract.js";
 export * from "./intelligence.contract.js";
+export * from "./ingestion.contract.js";
