@@ -13,6 +13,7 @@ import { AiModule } from "./modules/ai/ai.module";
 import { IntegrationsModule } from "./modules/integrations/integrations.module";
 import { CopilotModule } from "./modules/copilot/copilot.module";
 import { SearchModule } from "./modules/search/search.module";
+import { IntelligenceModule } from "./modules/intelligence/intelligence.module";
 import { PrismaService } from "./database/prisma.service";
 
 @Module({
@@ -31,6 +32,7 @@ import { PrismaService } from "./database/prisma.service";
     IntegrationsModule,
     CopilotModule,
     SearchModule,
+    IntelligenceModule,
   ],
   providers: [PrismaService],
   exports: [PrismaService],

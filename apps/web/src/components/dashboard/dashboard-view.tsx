@@ -28,6 +28,7 @@ import { CreateSprintModal } from "@/components/sprints/create-sprint-modal";
 import { ActiveSprintBanner } from "@/components/sprints/active-sprint-banner";
 import { AiDecomposeModal } from "@/components/ai/ai-decompose-modal";
 import { CopilotModal } from "@/components/copilot/copilot-modal";
+import { StandupModal } from "@/components/intelligence/standup-modal";
 import {
   FolderKanban,
   Plus,
@@ -52,6 +53,7 @@ export function DashboardView() {
   const [isCreateSprintOpen, setIsCreateSprintOpen] = useState(false);
   const [isAiDecomposeOpen, setIsAiDecomposeOpen] = useState(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [isStandupOpen, setIsStandupOpen] = useState(false);
 
   const [filters, setFilters] = useState<FilterState>({
     search: "",
@@ -369,6 +371,7 @@ export function DashboardView() {
                 onOpenCreateSprintModal={() => setIsCreateSprintOpen(true)}
                 onOpenAiDecomposeModal={() => setIsAiDecomposeOpen(true)}
                 onOpenCopilotModal={() => setIsCopilotOpen(true)}
+                onOpenStandupModal={() => setIsStandupOpen(true)}
               />
 
               {/* View Rendering */}
@@ -463,6 +466,16 @@ export function DashboardView() {
         projectId={activeProjectId}
         projectName={activeProject?.name}
         projectKey={activeProject?.key}
+      />
+
+      {/* Delivery Intelligence Standup Modal (Phase 10) */}
+      <StandupModal
+        isOpen={isStandupOpen}
+        onClose={() => setIsStandupOpen(false)}
+        workspaceId={activeWorkspaceId}
+        projectId={activeProjectId}
+        sprintId={filters.sprintId || sprints.find((s) => s.status === "ACTIVE")?.id}
+        projectName={activeProject?.name || "Active Project"}
       />
     </div>
   );

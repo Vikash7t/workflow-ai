@@ -8,6 +8,7 @@ import {
   X,
   Timer,
   Sparkles,
+  FileText,
 } from "lucide-react";
 import {
   WorkflowStatusDto,
@@ -37,6 +38,7 @@ interface ViewHeaderProps {
   onOpenCreateSprintModal?: () => void;
   onOpenAiDecomposeModal?: () => void;
   onOpenCopilotModal?: () => void;
+  onOpenStandupModal?: () => void;
 }
 
 export function ViewHeader({
@@ -51,6 +53,7 @@ export function ViewHeader({
   onOpenCreateSprintModal,
   onOpenAiDecomposeModal,
   onOpenCopilotModal,
+  onOpenStandupModal,
 }: ViewHeaderProps) {
   const hasActiveFilters =
     Boolean(filters.search) ||
@@ -113,6 +116,16 @@ export function ViewHeader({
               <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 rounded bg-purple-900/60 text-[10px] font-mono text-purple-300">
                 ⌘K
               </kbd>
+            </button>
+          )}
+
+          {onOpenStandupModal && (
+            <button
+              onClick={onOpenStandupModal}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-medium transition"
+            >
+              <FileText className="w-3.5 h-3.5 text-blue-400" />
+              <span>Standup</span>
             </button>
           )}
 

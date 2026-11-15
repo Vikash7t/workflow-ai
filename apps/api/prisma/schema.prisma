@@ -329,6 +329,8 @@ model ActivityLog {
   issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
 
   @@index([issueId])
+  @@index([createdAt])
+  @@index([issueId, action])
   @@map("activity_logs")
 }
 

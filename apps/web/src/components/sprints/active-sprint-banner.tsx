@@ -1,18 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Timer,
   CheckCircle,
   Play,
   ArrowRight,
   AlertCircle,
+  AlertTriangle,
+  ShieldCheck,
   Loader2,
   X,
+  ChevronDown,
 } from "lucide-react";
 import { SprintDto } from "@workflow-ai/contracts";
 import { updateSprint, completeSprint } from "@/lib/api/sprints";
+import { getSprintRisk } from "@/lib/api/intelligence";
 
 interface ActiveSprintBannerProps {
   workspaceId: string;
@@ -32,6 +36,14 @@ export function ActiveSprintBanner({
 
   const activeSprint = sprints.find((s) => s.status === "ACTIVE");
   const plannedSprints = sprints.filter((s) => s.status === "PLANNED");
+  const [showRiskDetails, setShowRiskDetails] = useState(false);
+
+  const { data: sprintRisk } = useQuery({
+    queryKey: ["sprint-risk", workspaceId, activeSprint?.id],
+    queryFn: () => getSprintRisk(workspaceId, activeSprint!.id),
+    enabled: !!workspaceId && !!activeSprint?.id,
+    refetchInterval: 30000,
+  });
 
   const startSprintMutation = useMutation({
     mutationFn: (sprintId: string) =>
@@ -122,6 +134,34 @@ export function ActiveSprintBanner({
             <span className="font-bold text-white text-sm">
               {activeSprint.name}
             </span>
+
+            {sprintRisk && (
+              <button
+                type="button"
+                onClick={() => setShowRiskDetails((prev) => !prev)}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide border transition ${
+                  sprintRisk.riskLevel === "CRITICAL"
+                    ? "bg-red-500/20 text-red-300 border-red-500/40 hover:bg-red-500/30"
+                    : sprintRisk.riskLevel === "HIGH"
+                    ? "bg-orange-500/20 text-orange-300 border-orange-500/40 hover:bg-orange-500/30"
+                    : sprintRisk.riskLevel === "MEDIUM"
+                    ? "bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30"
+                    : "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30"
+                }`}
+                title="Click to view delivery risk details"
+              >
+                {sprintRisk.riskLevel === "LOW" ? (
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                ) : sprintRisk.riskLevel === "MEDIUM" ? (
+                  <AlertCircle className="w-3 h-3 text-amber-400" />
+                ) : (
+                  <AlertTriangle className="w-3 h-3" />
+                )}
+                <span>{sprintRisk.riskLevel} RISK</span>
+                <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+              </button>
+            )}
+
             {activeSprint.endDate && (
               <span className="text-slate-400 font-mono text-[11px]">
                 Ends {new Date(activeSprint.endDate).toLocaleDateString()}
@@ -158,6 +198,73 @@ export function ActiveSprintBanner({
           </button>
         </div>
       </div>
+
+      {/* Expanded Risk Factors Card */}
+      {showRiskDetails && sprintRisk && (
+        <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs space-y-2 animate-in fade-in duration-150">
+          <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+            <span className="font-semibold text-slate-200">
+              Delivery Risk Assessment:{" "}
+              <span
+                className={
+                  sprintRisk.riskLevel === "LOW"
+                    ? "text-emerald-400"
+                    : sprintRisk.riskLevel === "MEDIUM"
+                    ? "text-amber-400"
+                    : "text-red-400"
+                }
+              >
+                {sprintRisk.riskLevel}
+              </span>
+            </span>
+            <span className="text-[11px] text-slate-400">
+              {sprintRisk.completionPercentage}% completed
+              {sprintRisk.timeElapsedPercentage !== null &&
+                ` vs ${sprintRisk.timeElapsedPercentage}% elapsed`}
+            </span>
+          </div>
+
+          {sprintRisk.riskFactors.length === 0 ? (
+            <p className="text-slate-400 text-[11px] italic">
+              No delivery bottlenecks or pace deficits detected. Sprint is on track!
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              {sprintRisk.riskFactors.map((factor, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-start gap-2 p-2 rounded bg-slate-950/60 border border-slate-800/60"
+                >
+                  <AlertCircle
+                    className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${
+                      factor.severity === "CRITICAL"
+                        ? "text-red-400"
+                        : factor.severity === "HIGH"
+                        ? "text-orange-400"
+                        : "text-amber-400"
+                    }`}
+                  />
+                  <div className="space-y-0.5">
+                    <p className="text-slate-300 text-[11px]">{factor.description}</p>
+                    {factor.affectedIssueKeys.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-0.5">
+                        {factor.affectedIssueKeys.map((key) => (
+                          <span
+                            key={key}
+                            className="px-1.5 py-0.2 rounded font-mono text-[9px] bg-slate-800 text-blue-400"
+                          >
+                            {key}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Complete Sprint Modal */}
       {isCompleteOpen && (
