@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { HealthModule } from "./modules/health/health.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { TenancyModule } from "./modules/tenancy/tenancy.module";
@@ -16,6 +17,8 @@ import { SearchModule } from "./modules/search/search.module";
 import { IntelligenceModule } from "./modules/intelligence/intelligence.module";
 import { ExternalIngestionModule } from "./modules/ingestion/ingestion.module";
 import { PrismaService } from "./database/prisma.service";
+import { RateLimitGuard } from "./common/guards/rate-limit.guard";
+import { MetricsInterceptor } from "./modules/health/metrics.interceptor";
 
 @Module({
   imports: [
@@ -36,7 +39,17 @@ import { PrismaService } from "./database/prisma.service";
     IntelligenceModule,
     ExternalIngestionModule,
   ],
-  providers: [PrismaService],
+  providers: [
+    PrismaService,
+    {
+      provide: APP_GUARD,
+      useClass: RateLimitGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: MetricsInterceptor,
+    },
+  ],
   exports: [PrismaService],
 })
 export class AppModule {}

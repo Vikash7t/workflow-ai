@@ -10,7 +10,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private pool: Pool;
 
   constructor() {
-    const pool = new Pool({ connectionString: env.DATABASE_URL });
+    const pool = new Pool({
+      connectionString: env.DATABASE_URL,
+      max: 20, // Max 20 pooled connections
+      idleTimeoutMillis: 30000, // Close idle connections after 30s
+      connectionTimeoutMillis: 5000, // Connection acquisition timeout 5s
+    });
     const adapter = new PrismaPg(pool);
     super({ adapter });
     this.pool = pool;
@@ -19,7 +24,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async onModuleInit() {
     try {
       await this.$connect();
-      this.logger.log("✅ Successfully connected to PostgreSQL via Prisma 7");
+      this.logger.log("✅ Successfully connected to PostgreSQL via Prisma & pg.Pool");
     } catch (error) {
       this.logger.error("❌ Failed to connect to PostgreSQL:", error);
       throw error;
@@ -29,12 +34,19 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async onModuleDestroy() {
     await this.$disconnect();
     await this.pool.end();
-    this.logger.log("Prisma disconnected and pool terminated");
+    this.logger.log("Prisma disconnected and connection pool terminated");
   }
 
-  async isHealthy(): Promise<boolean> {
+  /**
+   * Health probe with strict timeout to prevent connection pool starvation.
+   */
+  async isHealthy(timeoutMs = 2000): Promise<boolean> {
     try {
-      await this.$queryRaw`SELECT 1`;
+      const probePromise = this.$queryRaw`SELECT 1`;
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Database probe timed out")), timeoutMs)
+      );
+      await Promise.race([probePromise, timeoutPromise]);
       return true;
     } catch {
       return false;
