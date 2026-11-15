@@ -35,6 +35,7 @@ interface ViewHeaderProps {
   onOpenCreateModal: () => void;
   onOpenCreateSprintModal?: () => void;
   onOpenAiDecomposeModal?: () => void;
+  onOpenCopilotModal?: () => void;
 }
 
 export function ViewHeader({
@@ -48,6 +49,7 @@ export function ViewHeader({
   onOpenCreateModal,
   onOpenCreateSprintModal,
   onOpenAiDecomposeModal,
+  onOpenCopilotModal,
 }: ViewHeaderProps) {
   const hasActiveFilters =
     Boolean(filters.search) ||
@@ -99,6 +101,19 @@ export function ViewHeader({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
+          {onOpenCopilotModal && (
+            <button
+              onClick={onOpenCopilotModal}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-purple-500/40 bg-purple-950/50 hover:bg-purple-900/60 text-purple-200 text-xs font-semibold shadow-sm transition active:scale-95"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <span>Copilot</span>
+              <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 rounded bg-purple-900/60 text-[10px] font-mono text-purple-300">
+                ⌘K
+              </kbd>
+            </button>
+          )}
+
           {onOpenAiDecomposeModal && (
             <button
               onClick={onOpenAiDecomposeModal}
