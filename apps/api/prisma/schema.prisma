@@ -264,6 +264,7 @@ model Issue {
 
   @@unique([projectId, issueNumber])
   @@index([workspaceId, statusId])
+  @@index([workspaceId, statusId, priority])
   @@index([projectId, statusId])
   @@index([assigneeId])
   @@index([sprintId])
@@ -332,6 +333,7 @@ model ActivityLog {
 
   @@index([issueId])
   @@index([createdAt])
+  @@index([issueId, createdAt])
   @@index([issueId, action])
   @@map("activity_logs")
 }

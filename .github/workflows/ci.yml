@@ -54,8 +54,14 @@ jobs:
       - name: Build contracts package
         run: npm run build:contracts
 
+      - name: Run Domain & Security Test Suites
+        run: npm run test --workspace=@workflow-ai/api
+
       - name: Build API application
         run: npm run build:api
 
-      - name: Build Web application
+      - name: Build Web application (Standalone)
         run: npm run build:web
+
+      - name: Validate Docker Compose Configuration
+        run: docker compose config
