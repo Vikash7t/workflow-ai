@@ -28,6 +28,8 @@ model User {
   assignedIssues Issue[]   @relation("IssueAssignee")
   comments      Comment[]
   sentInvitations WorkspaceInvitation[] @relation("Inviter")
+  aiSessionActions AiSessionAction[]
+  aiRequestAudits  AiRequestAudit[]
 
   @@map("users")
 }
@@ -130,6 +132,8 @@ model Workspace {
   issues         Issue[]
   sprints        Sprint[]
   invitations    WorkspaceInvitation[]
+  aiSessionActions AiSessionAction[]
+  aiRequestAudits  AiRequestAudit[]
 
   @@index([organizationId])
   @@map("workspaces")
@@ -187,6 +191,7 @@ model Project {
   workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   issues       Issue[]
   sprints      Sprint[]
+  aiSessionActions AiSessionAction[]
 
   @@unique([workspaceId, key])
   @@index([workspaceId])
@@ -320,4 +325,56 @@ model ActivityLog {
 
   @@index([issueId])
   @@map("activity_logs")
+}
+
+// -----------------------------------------------------------------------------
+// AI Infrastructure & Session Actions
+// -----------------------------------------------------------------------------
+
+model AiSessionAction {
+  id          String   @id @default(uuid())
+  workspaceId String
+  projectId   String
+  userId      String
+  actionType  String   @default("DECOMPOSE_TASKS") // DECOMPOSE_TASKS
+  rawInput    String   @db.Text
+  plan        Json     // Serialized DecomposeTaskPlanDto
+  status      String   @default("PROPOSED") // PROPOSED, COMMITTED, REJECTED, EXPIRED
+  expiresAt   DateTime
+  committedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, projectId])
+  @@index([userId])
+  @@index([status])
+  @@map("ai_session_actions")
+}
+
+model AiRequestAudit {
+  id               String   @id @default(uuid())
+  workspaceId      String
+  userId           String
+  provider         String   // "google", "mock", "anthropic", etc.
+  model            String   // "gemini-1.5-flash", "mock-decomposer-v1"
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  totalTokens      Int      @default(0)
+  estimatedCostUSD Float    @default(0.0)
+  latencyMs        Int      @default(0)
+  status           String   @default("SUCCESS") // SUCCESS, FAILED
+  errorMessage     String?
+  createdAt        DateTime @default(now())
+
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("ai_request_audits")
 }

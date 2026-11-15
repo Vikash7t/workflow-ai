@@ -9,3 +9,4 @@ export * from "./comment.contract.js";
 export * from "./dependency.contract.js";
 export * from "./sprint.contract.js";
 export * from "./activity.contract.js";
+export * from "./ai.contract.js";

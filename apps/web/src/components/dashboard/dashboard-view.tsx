@@ -25,6 +25,7 @@ import { CreateIssueModal } from "@/components/issues/create-issue-modal";
 import { CreateProjectModal } from "@/components/projects/create-project-modal";
 import { CreateSprintModal } from "@/components/sprints/create-sprint-modal";
 import { ActiveSprintBanner } from "@/components/sprints/active-sprint-banner";
+import { AiDecomposeModal } from "@/components/ai/ai-decompose-modal";
 import {
   FolderKanban,
   Plus,
@@ -47,6 +48,7 @@ export function DashboardView() {
   const [quickCreateStatusId, setQuickCreateStatusId] = useState<string | undefined>();
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isCreateSprintOpen, setIsCreateSprintOpen] = useState(false);
+  const [isAiDecomposeOpen, setIsAiDecomposeOpen] = useState(false);
 
   const [filters, setFilters] = useState<FilterState>({
     search: "",
@@ -300,6 +302,7 @@ export function DashboardView() {
                   setIsCreateIssueOpen(true);
                 }}
                 onOpenCreateSprintModal={() => setIsCreateSprintOpen(true)}
+                onOpenAiDecomposeModal={() => setIsAiDecomposeOpen(true)}
               />
 
               {/* View Rendering */}
@@ -375,6 +378,15 @@ export function DashboardView() {
         onClose={() => setIsCreateSprintOpen(false)}
         workspaceId={activeWorkspaceId}
         projectId={activeProjectId}
+      />
+
+      {/* AI Task Decomposition Modal (Phase 6) */}
+      <AiDecomposeModal
+        isOpen={isAiDecomposeOpen}
+        onClose={() => setIsAiDecomposeOpen(false)}
+        workspaceId={activeWorkspaceId}
+        projectId={activeProjectId}
+        sprints={sprints}
       />
     </div>
   );
