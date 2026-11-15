@@ -135,6 +135,7 @@ model Workspace {
   aiSessionActions AiSessionAction[]
   aiRequestAudits  AiRequestAudit[]
   gitIntegrations GitIntegration[]
+  issueEmbeddings IssueEmbedding[]
 
   @@index([organizationId])
   @@map("workspaces")
@@ -194,6 +195,7 @@ model Project {
   sprints      Sprint[]
   aiSessionActions AiSessionAction[]
   gitIntegrations GitIntegration[]
+  issueEmbeddings IssueEmbedding[]
 
   @@unique([workspaceId, key])
   @@index([workspaceId])
@@ -256,6 +258,7 @@ model Issue {
   activities   ActivityLog[]
   blockedBy    IssueDependency[] @relation("BlockedIssues")
   blocking     IssueDependency[] @relation("BlockerIssues")
+  embedding    IssueEmbedding?
 
   @@unique([projectId, issueNumber])
   @@index([workspaceId, statusId])
@@ -423,4 +426,28 @@ model WebhookEvent {
   @@index([integrationId])
   @@index([createdAt])
   @@map("webhook_events")
+}
+
+// -----------------------------------------------------------------------------
+// Semantic Search & Issue Embeddings
+// -----------------------------------------------------------------------------
+
+model IssueEmbedding {
+  id          String   @id @default(uuid())
+  issueId     String   @unique
+  workspaceId String
+  projectId   String
+  contentHash String   // SHA-256 of title + description for change detection
+  model       String   @default("text-embedding-004")
+  vectorData  Float[]  // Portable float array embedding representation
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  issue       Issue     @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, projectId])
+  @@index([workspaceId, contentHash])
+  @@map("issue_embeddings")
 }

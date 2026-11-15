@@ -11,8 +11,11 @@ import {
   WorkflowStatusDto,
   WorkspaceMemberDto,
   SprintDto,
+  DuplicateMatchDto,
 } from "@workflow-ai/contracts";
 import { createIssue } from "@/lib/api/issues";
+import { detectDuplicates } from "@/lib/api/search";
+import { DuplicateWarningBanner } from "./duplicate-warning-banner";
 
 interface CreateIssueModalProps {
   isOpen: boolean;
@@ -56,6 +59,14 @@ export function CreateIssueModal({
   const [estimate, setEstimate] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Real-time duplicate detection state
+  const [duplicateMatches, setDuplicateMatches] = useState<DuplicateMatchDto[]>([]);
+  const [duplicateConfidence, setDuplicateConfidence] = useState<
+    "NONE" | "LOW" | "MEDIUM" | "HIGH"
+  >("NONE");
+  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
+  const [dismissDuplicates, setDismissDuplicates] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       setTitle("");
@@ -68,8 +79,64 @@ export function CreateIssueModal({
       setParentId(initialParentId || "");
       setEstimate("");
       setErrorMsg(null);
+      setDuplicateMatches([]);
+      setDuplicateConfidence("NONE");
+      setDismissDuplicates(false);
     }
   }, [isOpen, initialStatusId, initialParentId, initialType, statuses]);
+
+  // Debounced duplicate detection with AbortController
+  useEffect(() => {
+    if (
+      !isOpen ||
+      !title ||
+      title.trim().length < 5 ||
+      dismissDuplicates ||
+      !projectId
+    ) {
+      setDuplicateMatches([]);
+      setDuplicateConfidence("NONE");
+      setIsCheckingDuplicates(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setIsCheckingDuplicates(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await detectDuplicates(
+          workspaceId,
+          {
+            projectId,
+            title: title.trim(),
+            description: description.trim() || undefined,
+          },
+          controller.signal
+        );
+
+        if (res.hasDuplicates) {
+          setDuplicateMatches(res.matches);
+          setDuplicateConfidence(res.highestConfidence);
+        } else {
+          setDuplicateMatches([]);
+          setDuplicateConfidence("NONE");
+        }
+      } catch (err: any) {
+        if (err.name !== "AbortError") {
+          setDuplicateMatches([]);
+          setDuplicateConfidence("NONE");
+        }
+      } finally {
+        setIsCheckingDuplicates(false);
+      }
+    }, 450);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [title, description, workspaceId, projectId, isOpen, dismissDuplicates]);
 
   // Global keyboard shortcut 'c' when modal is closed
   useEffect(() => {
@@ -182,13 +249,25 @@ export function CreateIssueModal({
             <input
               type="text"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setDismissDuplicates(false);
+              }}
               placeholder="e.g. Implement user session expiration handling"
               required
               autoFocus
               className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
             />
           </div>
+
+          {(duplicateMatches.length > 0 || isCheckingDuplicates) && (
+            <DuplicateWarningBanner
+              matches={duplicateMatches}
+              confidence={duplicateConfidence}
+              isLoading={isCheckingDuplicates}
+              onDismiss={() => setDismissDuplicates(true)}
+            />
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>

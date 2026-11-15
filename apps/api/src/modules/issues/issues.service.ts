@@ -3,8 +3,10 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Optional,
 } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
+import { SemanticSearchService } from "../search/semantic-search.service";
 import {
   CreateIssueDto,
   UpdateIssueDto,
@@ -18,7 +20,10 @@ import {
 
 @Injectable()
 export class IssuesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly semanticSearchService?: SemanticSearchService
+  ) {}
 
   private mapIssue(issue: any): IssueDto {
     return {
@@ -191,6 +196,18 @@ export class IssuesService {
 
       return issue;
     });
+
+    if (this.semanticSearchService) {
+      this.semanticSearchService
+        .upsertIssueEmbedding(
+          createdIssue.id,
+          workspaceId,
+          dto.projectId,
+          createdIssue.title,
+          createdIssue.description
+        )
+        .catch(() => {});
+    }
 
     return this.mapIssue(createdIssue);
   }
@@ -386,6 +403,18 @@ export class IssuesService {
 
       return result;
     });
+
+    if (this.semanticSearchService && (dto.title || dto.description !== undefined)) {
+      this.semanticSearchService
+        .upsertIssueEmbedding(
+          updated.id,
+          updated.workspaceId,
+          updated.projectId,
+          updated.title,
+          updated.description
+        )
+        .catch(() => {});
+    }
 
     return this.mapIssue(updated);
   }

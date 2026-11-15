@@ -16,6 +16,7 @@ import { listProjects } from "@/lib/api/projects";
 import { listWorkflowStatuses } from "@/lib/api/workflows";
 import { listSprints } from "@/lib/api/sprints";
 import { listIssues } from "@/lib/api/issues";
+import { searchSemantic } from "@/lib/api/search";
 import { WorkspaceNav } from "@/components/workspace-nav";
 import { KanbanBoard } from "@/components/board/kanban-board";
 import { IssueListView } from "@/components/list/issue-list-view";
@@ -155,7 +156,7 @@ export function DashboardView() {
     enabled: !!activeWorkspaceId && !!activeProjectId,
   });
 
-  // 6. Fetch Issues for active project
+  // 6. Fetch Issues for active project (Standard or Semantic AI Search)
   const { data: issuesResponse, isLoading: isLoadingIssues } = useQuery({
     queryKey: [
       "issues",
@@ -163,8 +164,53 @@ export function DashboardView() {
       activeProjectId,
       filters,
     ],
-    queryFn: () =>
-      listIssues(activeWorkspaceId, {
+    queryFn: async () => {
+      if (
+        filters.semantic &&
+        filters.search &&
+        filters.search.trim().length >= 2
+      ) {
+        const searchResult = await searchSemantic(activeWorkspaceId, {
+          projectId: activeProjectId,
+          query: filters.search.trim(),
+          statusId: filters.statusId || undefined,
+          sprintId: filters.sprintId || undefined,
+          assigneeId: filters.assigneeId || undefined,
+          type: (filters.type as any) || undefined,
+          priority: (filters.priority as any) || undefined,
+        });
+
+        return {
+          items: searchResult.results.map((r): IssueDto => ({
+            id: r.issueId,
+            projectId: activeProjectId,
+            workspaceId: activeWorkspaceId,
+            issueNumber: parseInt(r.key.split("-")[1] || "0", 10),
+            key: r.key,
+            type: r.type,
+            title: r.title,
+            description: r.description || null,
+            priority: r.priority,
+            statusId: r.status.id || "",
+            status: r.status as any,
+            assigneeId: r.assignee?.id || null,
+            assignee: r.assignee as any,
+            reporterId: "",
+            parentId: null,
+            estimate: null,
+            dueDate: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            subtaskCount: 0,
+          })),
+          total: searchResult.total,
+          page: 1,
+          pageSize: 50,
+          totalPages: 1,
+        };
+      }
+
+      return listIssues(activeWorkspaceId, {
         projectId: activeProjectId,
         search: filters.search || undefined,
         statusId: filters.statusId || undefined,
@@ -172,7 +218,8 @@ export function DashboardView() {
         type: (filters.type as any) || undefined,
         priority: (filters.priority as any) || undefined,
         assigneeId: filters.assigneeId || undefined,
-      }),
+      });
+    },
     enabled: !!activeWorkspaceId && !!activeProjectId,
   });
 

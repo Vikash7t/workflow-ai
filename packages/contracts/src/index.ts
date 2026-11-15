@@ -12,3 +12,4 @@ export * from "./activity.contract.js";
 export * from "./ai.contract.js";
 export * from "./git-integration.contract.js";
 export * from "./copilot.contract.js";
+export * from "./search.contract.js";
