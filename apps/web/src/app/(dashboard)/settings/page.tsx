@@ -14,16 +14,19 @@ import {
   AlertCircle,
   Trash2,
   Plus,
+  GitPullRequest,
 } from "lucide-react";
 import { WorkspaceDto, WorkspaceMemberDto, WorkspaceInvitationDto, Role } from "@workflow-ai/contracts";
 import { apiClient } from "@/lib/api/client";
 import { listWorkspaces, listWorkspaceMembers } from "@/lib/api/tenancy";
+import { GitIntegrationsPanel } from "@/components/integrations/git-integrations-panel";
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
 
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<"members" | "integrations">("members");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<Role>("MEMBER");
   const [inviteStatus, setInviteStatus] = useState<string | null>(null);
@@ -168,8 +171,36 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Members Management Card */}
-        <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-6 space-y-6">
+        {/* Settings Navigation Tabs */}
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+          <button
+            onClick={() => setActiveTab("members")}
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              activeTab === "members"
+                ? "bg-blue-600/15 text-blue-400 border border-blue-500/30"
+                : "text-slate-400 hover:text-white hover:bg-slate-900"
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Team & Members ({members.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("integrations")}
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              activeTab === "integrations"
+                ? "bg-blue-600/15 text-blue-400 border border-blue-500/30"
+                : "text-slate-400 hover:text-white hover:bg-slate-900"
+            }`}
+          >
+            <GitPullRequest className="w-3.5 h-3.5" />
+            <span>Git Integrations</span>
+          </button>
+        </div>
+
+        {activeTab === "members" ? (
+          /* Members Management Card */
+          <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-6 space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-white font-semibold text-sm">
               <Users className="w-4 h-4 text-blue-400" />
@@ -283,6 +314,12 @@ export default function SettingsPage() {
             </div>
           )}
         </div>
+        ) : (
+          <GitIntegrationsPanel
+            workspaceId={currentWorkspaceId}
+            isAdmin={isAdminOrOwner}
+          />
+        )}
       </main>
     </div>
   );

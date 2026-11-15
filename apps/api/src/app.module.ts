@@ -10,6 +10,7 @@ import { CommentsModule } from "./modules/comments/comments.module";
 import { DependenciesModule } from "./modules/dependencies/dependencies.module";
 import { SprintsModule } from "./modules/sprints/sprints.module";
 import { AiModule } from "./modules/ai/ai.module";
+import { IntegrationsModule } from "./modules/integrations/integrations.module";
 import { PrismaService } from "./database/prisma.service";
 
 @Module({
@@ -25,6 +26,7 @@ import { PrismaService } from "./database/prisma.service";
     DependenciesModule,
     SprintsModule,
     AiModule,
+    IntegrationsModule,
   ],
   providers: [PrismaService],
   exports: [PrismaService],
