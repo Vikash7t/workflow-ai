@@ -22,6 +22,7 @@ export interface FilterState {
   type: string;
   priority: string;
   assigneeId: string;
+  semantic?: boolean;
 }
 
 interface ViewHeaderProps {
@@ -67,6 +68,7 @@ export function ViewHeader({
       type: "",
       priority: "",
       assigneeId: "",
+      semantic: false,
     });
   };
 
@@ -150,7 +152,7 @@ export function ViewHeader({
       {/* Filter Row */}
       <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
         {/* Search Input */}
-        <div className="relative min-w-[180px] flex-1 sm:flex-initial">
+        <div className="relative min-w-[200px] flex-1 sm:flex-initial flex items-center">
           <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -158,9 +160,39 @@ export function ViewHeader({
             onChange={(e) =>
               onFilterChange({ ...filters, search: e.target.value })
             }
-            placeholder="Search issues..."
-            className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+            placeholder={
+              filters.semantic
+                ? "Semantic AI search (concept/meaning)..."
+                : "Search issues..."
+            }
+            className={`w-full pl-8 pr-20 py-1.5 rounded-lg bg-slate-900 border text-xs text-white placeholder-slate-500 focus:outline-none transition ${
+              filters.semantic
+                ? "border-purple-500/60 focus:border-purple-400 bg-purple-950/10"
+                : "border-slate-800 focus:border-blue-500"
+            }`}
           />
+          <button
+            type="button"
+            onClick={() =>
+              onFilterChange({
+                ...filters,
+                semantic: !filters.semantic,
+              })
+            }
+            title={
+              filters.semantic
+                ? "Switch to standard keyword search"
+                : "Enable Semantic Vector AI search"
+            }
+            className={`absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition ${
+              filters.semantic
+                ? "bg-purple-600 text-white shadow-sm"
+                : "bg-slate-800 text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <Sparkles className="w-2.5 h-2.5" />
+            <span>AI</span>
+          </button>
         </div>
 
         {/* Sprint Filter */}
